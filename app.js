@@ -19,7 +19,7 @@ app.get('/', (req, res) =>{
 
 
 app.get('/api/usuarios', (req, res) =>{
-    res.send(['juan', 'kevin','manuela'])
+    res.send([usuarios])
 })
 
 // app.get('/api/usuarios/:id', (req, res) =>{
@@ -27,7 +27,7 @@ app.get('/api/usuarios', (req, res) =>{
 // })
 
 app.get('/api/usuarios/:id', (req, res) =>{
-    let usuario = usuarios.find(u => u.id === parseInt(req.params.id));
+    let usuario = existeUsuario(req.params.id);
     if(!usuario) res.status(404).send('no fue encontrado el usuario');
     res.send(usuario)
 })
@@ -39,10 +39,7 @@ app.get('/api/usuarios/:years/:month', (req, res) =>{
 
 app.post('/api/usuarios', (req, res) =>{
 
-const schema = Joi.object({
-nombre: Joi.string().min(3).required(),});
-
- const {error, value} = schema.validate({ nombre:req.body.nombre });
+ const {error, value} = validarUsuario(req.body.nombre )
 if(!error){
     const usuario = {
     id :usuarios.length +1,
@@ -55,13 +52,49 @@ if(!error){
     res.status(400).send(mensaje)
 }
 
-// if(!req.body.nombre || req.body.nombre.length <= 2){
-//      res.status(400).send('Debe ingresar un nombre, que tenga minimo 3 letras')
-//      return;
-//     }
+app.put('/api/usuarios/:id', (req, res) =>{
+    let usuario = existeUsuario(req.params.id);
+    if(!usuario){ 
+     res.status(404).send('no fue encontrado el usuario')
+     return;
+    };
+    
+    const {error, value} = validarUsuario(req.body.nombre );
+    if(error){
+    const mensaje = error.details[0].message;
+    res.status(400).send(mensaje)
+    return;
+    }
+
+    usuario.nombre = value.nombre;
+    res.send(usuario);
+})
 
 })
+
+app.delete('/api/usuarios/:id', (req, res) =>{
+    let usuario = existeUsuario(req.params.id);
+    if(!usuario){ 
+     res.status(404).send('no fue encontrado el usuario')
+     return;
+    };
+
+    const index = usuarios.indexOf(usuario);
+    usuarios.splice(index, 1)
+
+    res.send(usuarios)
+});    
 
 app.listen(3000, ()=>{
     console.log('Escuchando en el puerto 3000')
 })
+
+function existeUsuario(id){
+    return( usuarios.find(u => u.id === parseInt(id)));
+}
+
+function validarUsuario(nom){
+    const schema = Joi.object({
+        nombre: Joi.string().min(3).required(),});
+        return(schema.validate({ nombre:nom}));
+}
